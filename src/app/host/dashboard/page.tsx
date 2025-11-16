@@ -26,7 +26,12 @@ export default function Home() {
       await supabase.auth.getSession()
 
     if (!sessionData.session) {
-      await supabase.auth.signInAnonymously()
+      const { error: signInError } = await supabase.auth.signInAnonymously()
+      if (signInError) {
+        console.error(signInError)
+        alert('Failed to authenticate')
+        return
+      }
     }
 
     const { data, error } = await supabase
