@@ -9,6 +9,7 @@ export default function Lobby({
   gameId: string
 }) {
   const { Canvas } = useQRCode()
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://kavo.lt'
 
   const onClickStartGame = async () => {
     const { data, error } = await supabase
@@ -45,7 +46,7 @@ export default function Lobby({
         <div className="pl-4">
           {/* <img src="/qr.png" alt="QR code" /> */}
           <Canvas
-            text={`https://kahoot-alternative.vercel.app/game/${gameId}`}
+            text={`${baseUrl}/game/${gameId}`}
             options={{
               errorCorrectionLevel: 'M',
               margin: 3,
