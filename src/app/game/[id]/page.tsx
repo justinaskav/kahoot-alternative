@@ -34,6 +34,9 @@ export default function Home({
 
   const [currentQuestionSequence, setCurrentQuestionSequence] = useState(0)
   const [isAnswerRevealed, setIsAnswerRevealed] = useState(false)
+  const [randomizeAnswers, setRandomizeAnswers] = useState(false)
+  const [answerTimeSeconds, setAnswerTimeSeconds] = useState(20)
+  const [scoringMode, setScoringMode] = useState('points')
 
   const getGame = async () => {
     const { data: game } = await supabase
@@ -43,6 +46,9 @@ export default function Home({
       .single()
     if (!game) return
     setCurrentScreen(game.phase as Screens)
+    setRandomizeAnswers(game.randomize_answers)
+    setAnswerTimeSeconds(game.answer_time_seconds)
+    setScoringMode(game.scoring_mode)
     if (game.phase == Screens.quiz) {
       setCurrentQuestionSequence(game.current_question_sequence)
       setIsAnswerRevealed(game.is_answer_revealed)
@@ -88,6 +94,9 @@ export default function Home({
               setCurrentScreen(Screens.quiz)
               setCurrentQuestionSequence(game.current_question_sequence)
               setIsAnswerRevealed(game.is_answer_revealed)
+              setRandomizeAnswers(game.randomize_answers)
+              setAnswerTimeSeconds(game.answer_time_seconds)
+              setScoringMode(game.scoring_mode)
             }
           }
         )
@@ -114,6 +123,10 @@ export default function Home({
           questionCount={questions!.length}
           participantId={participant!.id}
           isAnswerRevealed={isAnswerRevealed}
+          randomizeAnswers={randomizeAnswers}
+          answerTimeSeconds={answerTimeSeconds}
+          scoringMode={scoringMode}
+          gameId={gameId}
         ></Quiz>
       )}
       {currentScreen == Screens.results && (

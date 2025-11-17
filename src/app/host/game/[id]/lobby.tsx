@@ -1,5 +1,6 @@
 import { Participant, supabase } from '@/types/types'
 import { useQRCode } from 'next-qrcode'
+import { useState } from 'react'
 
 export default function Lobby({
   participants: participants,
@@ -10,11 +11,19 @@ export default function Lobby({
 }) {
   const { Canvas } = useQRCode()
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://kavo.lt'
+  const [randomizeAnswers, setRandomizeAnswers] = useState(true)
+  const [answerTimeSeconds, setAnswerTimeSeconds] = useState(20)
+  const [scoringMode, setScoringMode] = useState('points')
 
   const onClickStartGame = async () => {
     const { data, error } = await supabase
       .from('games')
-      .update({ phase: 'quiz' })
+      .update({
+        phase: 'quiz',
+        randomize_answers: randomizeAnswers,
+        answer_time_seconds: answerTimeSeconds,
+        scoring_mode: scoringMode
+      })
       .eq('id', gameId)
     if (error) {
       return alert(error.message)
@@ -34,6 +43,50 @@ export default function Lobby({
                 {participant.nickname}
               </div>
             ))}
+          </div>
+
+          <div className="mb-4 space-y-4">
+            <label className="flex items-center text-white cursor-pointer">
+              <input
+                type="checkbox"
+                checked={randomizeAnswers}
+                onChange={(e) => setRandomizeAnswers(e.target.checked)}
+                className="mr-2 w-5 h-5 cursor-pointer"
+              />
+              <span className="text-lg">Randomize answer order</span>
+            </label>
+
+            <div>
+              <label className="block text-white text-lg mb-2">
+                Answer time per question
+              </label>
+              <select
+                value={answerTimeSeconds}
+                onChange={(e) => setAnswerTimeSeconds(Number(e.target.value))}
+                className="w-full p-2 text-lg rounded cursor-pointer"
+              >
+                <option value={10}>10 seconds</option>
+                <option value={20}>20 seconds (default)</option>
+                <option value={30}>30 seconds</option>
+                <option value={45}>45 seconds</option>
+                <option value={60}>60 seconds</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-white text-lg mb-2">
+                Scoring mode
+              </label>
+              <select
+                value={scoringMode}
+                onChange={(e) => setScoringMode(e.target.value)}
+                className="w-full p-2 text-lg rounded cursor-pointer"
+              >
+                <option value="points">Points (time-based)</option>
+                <option value="correct_count">Correct answers only</option>
+                <option value="both">Both points and correct answers</option>
+              </select>
+            </div>
           </div>
 
           <button

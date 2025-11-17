@@ -1,18 +1,25 @@
 import { TIME_TIL_CHOICE_REVEAL } from '@/constants'
 import { Answer, Participant, Question, supabase } from '@/types/types'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { CountdownCircleTimer } from 'react-countdown-circle-timer'
+import { seededShuffle } from '@/utils/shuffle'
 
 export default function Quiz({
   question: question,
   questionCount: questionCount,
   gameId,
   participants,
+  randomizeAnswers = false,
+  answerTimeSeconds = 20,
+  scoringMode = 'points',
 }: {
   question: Question
   questionCount: number
   gameId: string
   participants: Participant[]
+  randomizeAnswers?: boolean
+  answerTimeSeconds?: number
+  scoringMode?: string
 }) {
   const [isAnswerRevealed, setIsAnswerRevealed] = useState(false)
 
@@ -23,6 +30,18 @@ export default function Quiz({
   const answerStateRef = useRef<Answer[]>()
 
   answerStateRef.current = answers
+
+  // Compute shuffled choices with index mapping (colors stay with original indices)
+  const { displayChoices, indexMap } = useMemo(() => {
+    if (!randomizeAnswers) {
+      return {
+        displayChoices: question.choices,
+        indexMap: question.choices.map((_, i) => i)
+      }
+    }
+    const { shuffled, indexMap } = seededShuffle(question.choices, `${gameId}-${question.id}`)
+    return { displayChoices: shuffled, indexMap }
+  }, [question.choices, question.id, randomizeAnswers, gameId])
 
   const getNextQuestion = async () => {
     var updateData
@@ -121,7 +140,7 @@ export default function Quiz({
                   onTimeUp()
                 }}
                 isPlaying
-                duration={20}
+                duration={answerTimeSeconds}
                 colors={['#004777', '#F7B801', '#A30000', '#A30000']}
                 colorsTime={[7, 5, 2, 0]}
               >
@@ -136,23 +155,35 @@ export default function Quiz({
         )}
         {isAnswerRevealed && (
           <div className="flex justify-center">
-            {question.choices.map((choice, index) => (
-              <div
-                key={choice.id}
-                className="mx-2 h-48 w-24 flex flex-col items-stretch justify-end"
-              >
-                <div className="flex-grow relative">
+            {displayChoices.map((choice, index) => (
+                <div
+                  key={choice.id}
+                  className="mx-2 h-48 w-24 flex flex-col items-stretch justify-end"
+                >
+                  <div className="flex-grow relative">
+                    <div
+                      style={{
+                        height: `${
+                          (answers.filter(
+                            (answer) => answer.choice_id === choice.id
+                          ).length *
+                            100) /
+                          (answers.length || 1)
+                        }%`,
+                      }}
+                      className={`absolute bottom-0 left-0 right-0 mb-1 rounded-t ${
+                        index === 0
+                          ? 'bg-red-500'
+                          : index === 1
+                          ? 'bg-blue-500'
+                          : index === 2
+                          ? 'bg-yellow-500'
+                          : 'bg-green-500'
+                      }`}
+                    ></div>
+                  </div>
                   <div
-                    style={{
-                      height: `${
-                        (answers.filter(
-                          (answer) => answer.choice_id === choice.id
-                        ).length *
-                          100) /
-                        (answers.length || 1)
-                      }%`,
-                    }}
-                    className={`absolute bottom-0 left-0 right-0 mb-1 rounded-t ${
+                    className={`mt-1 text-white text-lg text-center py-2 rounded-b ${
                       index === 0
                         ? 'bg-red-500'
                         : index === 1
@@ -161,25 +192,13 @@ export default function Quiz({
                         ? 'bg-yellow-500'
                         : 'bg-green-500'
                     }`}
-                  ></div>
+                  >
+                    {
+                      answers.filter((answer) => answer.choice_id === choice.id)
+                        .length
+                    }
+                  </div>
                 </div>
-                <div
-                  className={`mt-1 text-white text-lg text-center py-2 rounded-b ${
-                    index === 0
-                      ? 'bg-red-500'
-                      : index === 1
-                      ? 'bg-blue-500'
-                      : index === 2
-                      ? 'bg-yellow-500'
-                      : 'bg-green-500'
-                  }`}
-                >
-                  {
-                    answers.filter((answer) => answer.choice_id === choice.id)
-                      .length
-                  }
-                </div>
-              </div>
             ))}
           </div>
         )}
@@ -187,61 +206,61 @@ export default function Quiz({
 
       {hasShownChoices && (
         <div className="flex justify-between flex-wrap p-4">
-          {question.choices.map((choice, index) => (
-            <div key={choice.id} className="w-1/2 p-1">
-              <div
-                className={`px-4 py-6 w-full text-2xl rounded font-bold text-white flex justify-between
-                ${
-                  index === 0
-                    ? 'bg-red-500'
-                    : index === 1
-                    ? 'bg-blue-500'
-                    : index === 2
-                    ? 'bg-yellow-500'
-                    : 'bg-green-500'
-                }
-                ${isAnswerRevealed && !choice.is_correct ? 'opacity-60' : ''}
-               `}
-              >
-                <div>{choice.body}</div>
-                {isAnswerRevealed && (
-                  <div>
-                    {choice.is_correct && (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={5}
-                        stroke="currentColor"
-                        className="w-6 h-6"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="m4.5 12.75 6 6 9-13.5"
-                        />
-                      </svg>
-                    )}
-                    {!choice.is_correct && (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={5}
-                        stroke="currentColor"
-                        className="w-6 h-6"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M6 18 18 6M6 6l12 12"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                )}
+          {displayChoices.map((choice, index) => (
+              <div key={choice.id} className="w-1/2 p-1">
+                <div
+                  className={`px-4 py-6 w-full text-2xl rounded font-bold text-white flex justify-between
+                  ${
+                    index === 0
+                      ? 'bg-red-500'
+                      : index === 1
+                      ? 'bg-blue-500'
+                      : index === 2
+                      ? 'bg-yellow-500'
+                      : 'bg-green-500'
+                  }
+                  ${isAnswerRevealed && !choice.is_correct ? 'opacity-60' : ''}
+                 `}
+                >
+                  <div>{choice.body}</div>
+                  {isAnswerRevealed && (
+                    <div>
+                      {choice.is_correct && (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={5}
+                          stroke="currentColor"
+                          className="w-6 h-6"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="m4.5 12.75 6 6 9-13.5"
+                          />
+                        </svg>
+                      )}
+                      {!choice.is_correct && (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={5}
+                          stroke="currentColor"
+                          className="w-6 h-6"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18 18 6M6 6l12 12"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
           ))}
         </div>
       )}

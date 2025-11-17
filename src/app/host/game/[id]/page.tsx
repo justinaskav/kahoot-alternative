@@ -33,6 +33,10 @@ export default function Home({
 
   const [quizSet, setQuizSet] = useState<QuizSet>()
 
+  const [randomizeAnswers, setRandomizeAnswers] = useState(false)
+  const [answerTimeSeconds, setAnswerTimeSeconds] = useState(20)
+  const [scoringMode, setScoringMode] = useState('points')
+
   useEffect(() => {
     const getQuestions = async () => {
       const { data: gameData, error: gameError } = await supabase
@@ -99,6 +103,9 @@ export default function Home({
             const game = payload.new as Game
             setCurrentQuestionSequence(game.current_question_sequence)
             setCurrentScreen(game.phase as AdminScreens)
+            setRandomizeAnswers(game.randomize_answers)
+            setAnswerTimeSeconds(game.answer_time_seconds)
+            setScoringMode(game.scoring_mode)
           }
         )
         .subscribe()
@@ -117,6 +124,9 @@ export default function Home({
 
       setCurrentQuestionSequence(gameData.current_question_sequence)
       setCurrentScreen(gameData.phase as AdminScreens)
+      setRandomizeAnswers(gameData.randomize_answers)
+      setAnswerTimeSeconds(gameData.answer_time_seconds)
+      setScoringMode(gameData.scoring_mode)
     }
 
     getQuestions()
@@ -130,18 +140,21 @@ export default function Home({
       {currentScreen == AdminScreens.lobby && (
         <Lobby participants={participants} gameId={gameId}></Lobby>
       )}
-      {currentScreen == AdminScreens.quiz && (
+      {currentScreen == AdminScreens.quiz && quizSet && quizSet.questions && (
         <Quiz
-          question={quizSet!.questions![currentQuestionSequence]}
-          questionCount={quizSet!.questions!.length}
+          question={quizSet.questions[currentQuestionSequence]}
+          questionCount={quizSet.questions.length}
           gameId={gameId}
           participants={participants}
+          randomizeAnswers={randomizeAnswers}
+          answerTimeSeconds={answerTimeSeconds}
+          scoringMode={scoringMode}
         ></Quiz>
       )}
-      {currentScreen == AdminScreens.result && (
+      {currentScreen == AdminScreens.result && quizSet && (
         <Results
           participants={participants!}
-          quizSet={quizSet!}
+          quizSet={quizSet}
           gameId={gameId}
         ></Results>
       )}

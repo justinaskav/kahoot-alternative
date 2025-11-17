@@ -19,21 +19,43 @@ export default function Results({
   gameId: string
 }) {
   const [gameResults, setGameResults] = useState<GameResult[]>([])
+  const [scoringMode, setScoringMode] = useState('points')
 
   const { width, height } = useWindowSize()
 
   useEffect(() => {
     const getResults = async () => {
+      // Fetch game settings to get scoring mode
+      const { data: gameData } = await supabase
+        .from('games')
+        .select('scoring_mode')
+        .eq('id', gameId)
+        .single()
+
+      if (gameData) {
+        setScoringMode(gameData.scoring_mode)
+      }
+
+      // Fetch results
       const { data, error } = await supabase
         .from('game_results')
         .select()
         .eq('game_id', gameId)
-        .order('total_score', { ascending: false })
+
       if (error) {
         return alert(error.message)
       }
 
-      setGameResults(data)
+      // Sort based on scoring mode
+      const sortedData = [...data].sort((a, b) => {
+        if (gameData?.scoring_mode === 'correct_count') {
+          return (b.correct_answers || 0) - (a.correct_answers || 0)
+        } else {
+          return (b.total_score || 0) - (a.total_score || 0)
+        }
+      })
+
+      setGameResults(sortedData)
     }
     getResults()
   }, [gameId])
@@ -65,10 +87,34 @@ export default function Results({
                 {gameResult.nickname}
               </div>
               <div className="pl-2">
-                <span className="text-xl font-bold">
-                  {gameResult.total_score}
-                </span>
-                <span>pts</span>
+                {scoringMode === 'correct_count' && (
+                  <>
+                    <span className="text-xl font-bold">
+                      {gameResult.correct_answers}
+                    </span>
+                    <span> correct</span>
+                  </>
+                )}
+                {scoringMode === 'points' && (
+                  <>
+                    <span className="text-xl font-bold">
+                      {gameResult.total_score}
+                    </span>
+                    <span> pts</span>
+                  </>
+                )}
+                {scoringMode === 'both' && (
+                  <>
+                    <span className="text-xl font-bold">
+                      {gameResult.correct_answers}
+                    </span>
+                    <span> correct / </span>
+                    <span className="text-xl font-bold">
+                      {gameResult.total_score}
+                    </span>
+                    <span> pts</span>
+                  </>
+                )}
               </div>
             </div>
           ))}

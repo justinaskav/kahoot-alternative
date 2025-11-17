@@ -99,31 +99,43 @@ export type Database = {
       }
       games: {
         Row: {
+          answer_time_seconds: number
           created_at: string
           current_question_sequence: number
           host_user_id: string | null
           id: string
           is_answer_revealed: boolean
           phase: string
+          question_started_at: string | null
           quiz_set_id: string
+          randomize_answers: boolean
+          scoring_mode: string
         }
         Insert: {
+          answer_time_seconds?: number
           created_at?: string
           current_question_sequence?: number
           host_user_id?: string | null
           id?: string
           is_answer_revealed?: boolean
           phase?: string
+          question_started_at?: string | null
           quiz_set_id: string
+          randomize_answers?: boolean
+          scoring_mode?: string
         }
         Update: {
+          answer_time_seconds?: number
           created_at?: string
           current_question_sequence?: number
           host_user_id?: string | null
           id?: string
           is_answer_revealed?: boolean
           phase?: string
+          question_started_at?: string | null
           quiz_set_id?: string
+          randomize_answers?: boolean
+          scoring_mode?: string
         }
         Relationships: [
           {
@@ -248,9 +260,11 @@ export type Database = {
     Views: {
       game_results: {
         Row: {
+          correct_answers: number | null
           game_id: string | null
           nickname: string | null
           participant_id: string | null
+          total_answers: number | null
           total_score: number | null
         }
         Relationships: []
